@@ -1,0 +1,26 @@
+version: '3'
+services:
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'passnfly'
+      MYSQL_USER: 'passnflyuser'
+      MYSQL_PASSWORD: 'password'
+      # Password for root access
+      MYSQL_ROOT_PASSWORD: 'password'
+    ports:
+      - '3306:3306'
+    expose:
+      # Opens port 3306 on the container
+      - '3306'
+    volumes:
+      - passnfly:/var/lib/mysql
+  passnfly-service:
+    build: ./app
+    volumes:
+      - .app:/usr/src/app
+    ports:
+      - 5000:80
+volumes:
+  passnfly:
