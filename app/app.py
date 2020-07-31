@@ -1,4 +1,7 @@
-from flask import Flask
+from io import TextIOWrapper
+import csv
+
+from flask import Flask, request,redirect, url_for
 from flask_restx import Resource, Api, fields
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
@@ -21,9 +24,9 @@ class Ticket(db.Model):
     country = db.Column(db.String(100))
     iata = db.Column(db.String(3)),
     icao = db.Column(db.String(4)),
-    latitude = db.Column(db.Numeric, as_decimal=True),
-    longitude = db.Column(db.Numeric, as_decimal=True),
-    altitude = db.Column(db.Numeric, as_decimal=False),
+    latitude = db.Column(db.Float),
+    longitude = db.Column(db.Float),
+    altitude = db.Column(db.Float),
     timezone = db.Column(db.String(100)),
     DST = db.Column(db.String(1)),
     type = db.Column(db.String(100)),
@@ -61,10 +64,10 @@ ticket = api.model('Ticket', {
     'source': fields.String(required=True, description='The ticket source')
     })
 
-@api.route('/ticket')
+@api.route('/ticket/<int:id>', methods=['GET, POST, DELETE'])
 class ticketApi(Resource):
     @api.marshal_with(ticket)
-    @api.route('/ticket/<int:id>/')
+    @api.doc('get_ticket')
     def get_ticket(self, id):
         ticket = Ticket.query.filter_by(id=id).first()
         if ticket is None:
@@ -72,11 +75,12 @@ class ticketApi(Resource):
         return make_response(jsonify(ticket), 200, {"mimetype": "text/json", 'Content-Type': 'text/json'})
 
     @api.marshal_with(ticket, code=200)
-    @api.route('/ticket/create/', methods=['POST'])
+    @api.doc('create_ticket')
     def create_ticket(self):
 
         data = request.json
         arg_pass = {
+            'id': data['id'],
             'name': data['name'],
             'city': data['city'],
             'country': data['country'],
@@ -98,7 +102,7 @@ class ticketApi(Resource):
         return make_response(jsonify(ticket), 200, {"mimetype": "text/json", 'Content-Type': 'text/json'})
 
     @api.marshal_with(ticket, code=200)
-    @api.route('/ticket/update/<int:id>/', methods=['POST'])
+    @api.doc('update_ticket')
     def update_ticket(self, id):
         data = request.json
         ticket = Ticket.query.get(id)
@@ -121,16 +125,38 @@ class ticketApi(Resource):
         return make_response(jsonify(ticket), 200, {"mimetype": "text/json", 'Content-Type': 'text/json'})
 
     @api.marshal_with(ticket, code=200)
-    @api.route('/ticket/delete/<int:id>/', methods=['DELETE'])
+    @api.doc('delete_ticket')
     def delete_ticket(self, id):
-        db.session.delete(Ticket.query.get(id))
-        db.session.commit()
-        return jsonify({'result': True})
+        from sqlalchemy.exc import IntegrityError
+        try:
+            db.session.delete(Ticket.query.get(id))
+            db.session.commit()
+        except AssertionError as e:
+            return {'status_code': 400, 'success': False, 'msg': str(e)}
+        except IntegrityError as e:
+            return {'status_code': 400, 'success': False, 'msg': str(e)}
+        return jsonify({'success': True})
 
     @api.marshal_with(ticket, code=200)
-    @api.route('/ticket/upload/', methods=['POST'])
+    @api.doc('upload_ticket')
     def upload_ticket(self):
         import csv
+        if request.method == 'POST':
+            csv_file = request.files['file']
+            csv_file = TextIOWrapper(csv_file, encoding='utf-8')
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            for row in csv_reader:
+                ticket = Ticket(
+                id=row[0], name=row[1], city=row[2], country=row[3],
+                iata=row[4], icao=row[5],latitude=row[6],longitude=row[7],
+                altitude=row[8], timezone=row[9], DST=row[10], type=row[11],
+                source=row[12]
+                )
+                db.session.add(user)
+                db.session.commit()
+                return redirect(url_for('upload_csv'))
+
+        return {'success': True}
 
         with open('passnfly.csv', 'r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
