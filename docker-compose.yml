@@ -17,7 +17,7 @@ services:
     volumes:
       - passnfly:/var/lib/mysql
   passnfly-service:
-    build: ./app
+    build: ./
     volumes:
       - .app:/usr/src/app
     ports:
