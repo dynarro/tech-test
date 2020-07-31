@@ -9,10 +9,10 @@ WORKDIR /passnfly
 
 RUN pip3 install -r requirements.txt
 
-COPY . /app
+COPY . /passnfly
 
 EXPOSE 5000
 
 ENTRYPOINT [ "python" ]
 
-CMD [ "app.py" ]
+CMD [ "/passnfly/app/app.py" ]

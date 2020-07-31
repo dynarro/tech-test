@@ -64,11 +64,12 @@ ticket = api.model('Ticket', {
     'source': fields.String(required=True, description='The ticket source')
     })
 
+@api.route('/ticket', methods=['GET, POST, DELETE'])
 @api.route('/ticket/<int:id>', methods=['GET, POST, DELETE'])
 class ticketApi(Resource):
     @api.marshal_with(ticket)
-    @api.doc('get_ticket')
-    def get_ticket(self, id):
+    @api.doc(params={'id': 1})
+    def get_ticket(self, id, methods=['GET']):
         ticket = Ticket.query.filter_by(id=id).first()
         if ticket is None:
             return {}
@@ -76,6 +77,7 @@ class ticketApi(Resource):
 
     @api.marshal_with(ticket, code=200)
     @api.doc('create_ticket')
+    @api.expect(ticket, validate=True)
     def create_ticket(self):
 
         data = request.json
@@ -102,7 +104,7 @@ class ticketApi(Resource):
         return make_response(jsonify(ticket), 200, {"mimetype": "text/json", 'Content-Type': 'text/json'})
 
     @api.marshal_with(ticket, code=200)
-    @api.doc('update_ticket')
+    @api.doc(params={'id': 1})
     def update_ticket(self, id):
         data = request.json
         ticket = Ticket.query.get(id)
@@ -125,7 +127,7 @@ class ticketApi(Resource):
         return make_response(jsonify(ticket), 200, {"mimetype": "text/json", 'Content-Type': 'text/json'})
 
     @api.marshal_with(ticket, code=200)
-    @api.doc('delete_ticket')
+    @api.doc(params={'id': 1})
     def delete_ticket(self, id):
         from sqlalchemy.exc import IntegrityError
         try:
